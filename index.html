@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- make sure for now that your script tag is in the head... WHY?????????-->
+    <title>Salam Sweeper Victor</title>
+    <link rel="icon" href="https://cdn.instructables.com/FK1/W8ZX/3ESEXCFMJJO/FK1W8ZX3ESEXCFMJJO.MEDIUM.jpg">
+</head>
+<body id= "container">
+  <h1 align="center">Victor's awesome Salam Sweeper game</h1>
+  <table id= "table" style="margin: auto; width:500px" border="solid" bgcolor="#ffcc99">
+    <!--here we do not have to write anything to populate the table. Everything is done in the JS section below-->
+  </table>
+
+    <script>
+      //in order to manipulate the table data, we need to use DOM functions, to "pull out" the table from HTML
+      var gameTable = document.getElementById("table");
+
+      //choose how many rows and columns the table will have
+      var rows = 9;
+      var columns = 9;
+      var nrBombs = 10;
+      var matrix = [];
+      var counter = 0;
+
+      //set up an empty matrix
+      for (var i = 0; i < rows; i++) {
+        matrix[i] = [];
+        for (var j = 0; j < columns; j++) {
+          matrix[i][j] = 0;
+        }
+      }
+      //debugger;
+
+      do {
+        //we start here to generate random locations for the bombs        
+        var bombRow = Math.floor(Math.random() * rows);        
+        var bombColumn = Math.floor(Math.random() * columns);
+
+        //if the coordinates found above indicate to a value 0, then we "place" the bomb by turning the place to -1
+        if (matrix[bombRow][bombColumn] == 0) {
+          //placing bomb
+          matrix[bombRow][bombColumn] = -1;
+          //counting the added bomb
+          counter++;
+
+          //getting coordinates for the place of the bomb, in case of edges
+          var bombRowMin = bombRow - 1;
+          var bombRowMax = bombRow + 1;
+
+          var bombColumnMin = bombColumn - 1;
+          var bombColumnMax = bombColumn + 1;
+
+          //vom folosi aceste valori pentru a stabili daca celula pe care suntem este pe marginea tabelului.  Daca valorile sunt pe marginea tabelului, atunci avem o problema cand ar trebui sa facem ca mai jos, cand facem if(bombRow == 0) {bombRowMin = 0;} Asta duce sa adaugam de 2 ori un 1 la aceeasi celula chiar daca in jur e numai o bomba.
+          var brMinMod = false;
+          var brMaxMod = false;
+          var bcMinMod = false;
+          var bcMaxMod = false;
+
+          if(bombRow == 0) {bombRowMin = 0; brMinMod = true}
+          if(bombRow == rows-1) {bombRowMax = rows-1; brMaxMod = true}
+
+          if(bombColumn == 0) {bombColumnMin = 0; bcMinMod = true}
+          if(bombColumn == columns-1) {bombColumnMax = columns-1; bcMaxMod = true}          
+
+          //top left
+          if (matrix[bombRowMin][bombColumnMin] != -1 && brMinMod == false && bcMinMod == false) {
+            matrix[bombRowMin][bombColumnMin]++;
+          }
+          //top
+          if (matrix[bombRowMin][bombColumn] != -1 && brMinMod == false) {
+            matrix[bombRowMin][bombColumn]++;
+          }
+          //top right
+          if (matrix[bombRowMin][bombColumnMax] != -1 && brMinMod == false && bcMaxMod == false) {
+            matrix[bombRowMin][bombColumnMax]++;
+          }
+          //left
+          if (matrix[bombRow][bombColumnMin] != -1 && bcMinMod == false) {             // x-1; y-1  |   x-1; y    | x-1; y+1
+            matrix[bombRow][bombColumnMin]++;                                          //   x; y-1     |    B     | x; y+1
+          }                                                                            // x+1; Y-1 |  x+1; y   | x+1; y+1
+          //right
+          if (matrix[bombRow][bombColumnMax] != -1 && bcMaxMod == false) {
+            matrix[bombRow][bombColumnMax]++;
+          }
+          //lower left
+          //debugger;
+          // console.log("bombRowMax",bombRowMax);
+          // console.log("bombColumnMin",bombColumnMin);
+          // console.log(matrix);
+          if (matrix[bombRowMax][bombColumnMin] != -1 && brMaxMod == false && bcMinMod == false) {
+            matrix[bombRowMax][bombColumnMin]++;
+          }
+          //lower
+          if (matrix[bombRowMax][bombColumn] != -1 && brMaxMod == false) {
+            matrix[bombRowMax][bombColumn]++;
+          }
+          //lower right                                                      
+          if (matrix[bombRowMax][bombColumnMax] != -1 && brMaxMod == false && bcMaxMod == false) {
+            matrix[bombRowMax][bombColumnMax]++;
+          }
+        }
+      } while (counter < nrBombs);
+
+      //in gameFrame vom scrie continutul HTML al celulelor. ele vor contine elementele din matricea matrix[i][j]
+      var gameFrame = "";
+      for (var i=0; i < rows; i++) {
+        gameFrame += "<tr>";
+        for (var j=0; j < columns; j++) {
+            gameFrame += "<td data-val=\"" + matrix[i][j] + "\" data-coords=\"" + i + "." + j + "\" height=\"50px\" width=\"50px\"></td>";
+        }
+        gameFrame += "</tr>";
+      }
+      //we add the HTML from gameFrame into the actual HTML code of the game table, by using innerHTML.
+      gameTable.innerHTML = gameFrame;
+      //we collect all table cells in an array called tds
+      var tds = document.querySelectorAll("td");
+
+      //we go over all tds, and we display the ones that we click on.
+      for(var i = 0; i < tds.length; i++) {
+        tds[i].oncontextmenu=function() {
+          this.innerHTML = "<img src=\"https://content.screencast.com/users/VictorAcatrineiHome/folders/Jing/media/2872fc02-5d51-4920-b04e-dfd327e80dbf/00000025.png\" alt=\"Smiley face\" height=\"53px\" width=\"54px\">";
+          return false;
+        };
+        tds[i].onclick = function() {
+          //at this point "this" is the td we are on at the moment, so we will actually add the content of the cell in the HTML of our page, making it visible.
+          
+          //console.log(typeof(this.dataset.val));
+
+          if (this.dataset.val == 0) {
+            //I am taking the coordinates of the cell with value 0 from the data atribute as a string, and split it in two variables that we save in the array caled xyCoordinates.
+            var xyCoordinates = this.dataset.coords.split(".");
+            let row = parseInt(xyCoordinates[0]);
+            let column = parseInt(xyCoordinates[1]);
+            //I need to automatically display all the cells around a 0 that do not have a bomb         
+            autoClickNoBombs(row, column);
+          } else if (this.dataset.val == -1) {
+            for(var j = 0; j < tds.length; j++) {
+              switch (tds[j].dataset.val) {
+                case "-1":
+                  tds[j].innerHTML = "<img src=\"https://content.screencast.com/users/VictorAcatrineiHome/folders/Jing/media/d625e56a-82ad-4ae3-a562-6cd8c23ab250/00000023.png\" alt=\"Smiley face\" height=\"53px\" width=\"54px\">";
+                  break;
+                default:
+                  tds[j].innerHTML = tds[j].dataset.val;
+              }
+              //tds[i].innerHTML = tds[i].dataset.val;
+            }
+          } else {
+              this.innerHTML = this.dataset.val;
+          }
+        }        
+      }
+      function autoClickNoBombs(x,y) {        
+        if ((x-1) >= 0 && (y-1) >= 0 && matrix[x-1][y-1] != -1) {
+          let foundTds = document.querySelectorAll('td[data-coords="' + (x-1) + '.' + (y-1) + '"]');
+          //console.log(foundTds);
+          let tdToShow;
+          if (foundTds.length == 1) {
+            tdToShow = foundTds[0];
+            //console.log(tdToShow);
+            tdToShow.innerHTML= tdToShow.getAttribute("data-val");
+
+          }
+          //console.log(tdToShow.getAttribute("data-alreadyDisplayed"));
+          if (matrix[x-1][y-1] == 0 && tdToShow && tdToShow.getAttribute("data-alreadyDisplayed") != "yes") {
+            tdToShow.setAttribute("data-alreadyDisplayed", "yes");            
+            autoClickNoBombs(x-1,y-1);
+          }
+        }
+
+        if ((x-1) >= 0 && matrix[x-1][y] != -1) {
+          let foundTds = document.querySelectorAll('td[data-coords="' + (x-1) + '.' + (y) + '"]');
+          //console.log(foundTds);
+          let tdToShow;
+          if (foundTds.length == 1) {
+            tdToShow = foundTds[0];
+            //console.log(tdToShow);
+            tdToShow.innerHTML= tdToShow.getAttribute("data-val");
+
+          }
+          if (matrix[x-1][y] == 0 && tdToShow.getAttribute("data-alreadyDisplayed") != "yes") {
+            tdToShow.setAttribute("data-alreadyDisplayed", "yes");            
+            autoClickNoBombs(x-1,y);
+          }
+        }
+        if ((x-1) >= 0 && (y+1) <= columns-1 && matrix[x-1][y+1] != -1) {
+          let foundTds = document.querySelectorAll('td[data-coords="' + (x-1) + '.' + (y+1) + '"]');
+          //console.log(foundTds);
+          let tdToShow;
+          if (foundTds.length == 1) {
+            tdToShow = foundTds[0];
+            //console.log(tdToShow);
+            tdToShow.innerHTML= tdToShow.getAttribute("data-val");
+
+          }
+          if (matrix[x-1][y+1] == 0 && tdToShow.getAttribute("data-alreadyDisplayed") != "yes") {
+            tdToShow.setAttribute("data-alreadyDisplayed", "yes");            
+            autoClickNoBombs(x-1,y+1);
+          }
+        }
+        if ((y-1) >= 0 && matrix[x][y-1] != -1) {
+          let foundTds = document.querySelectorAll('td[data-coords="' + (x) + '.' + (y-1) + '"]');
+          let tdToShow;
+          //console.log(foundTds);
+          if (foundTds.length == 1) {
+            tdToShow = foundTds[0];
+            //console.log(tdToShow);
+            tdToShow.innerHTML= tdToShow.getAttribute("data-val");
+
+          }
+          if (matrix[x][y-1] == 0 && tdToShow.getAttribute("data-alreadyDisplayed") != "yes") {
+            tdToShow.setAttribute("data-alreadyDisplayed", "yes");            
+            autoClickNoBombs(x,y-1);
+          }
+        }
+        if ((y+1) <= columns-1 && matrix[x][y+1] != -1) {
+          let foundTds = document.querySelectorAll('td[data-coords="' + (x) + '.' + (y+1) + '"]');
+          let tdToShow;
+          //console.log(foundTds);
+          if (foundTds.length == 1) {
+            tdToShow = foundTds[0];
+            //console.log(tdToShow);
+            tdToShow.innerHTML= tdToShow.getAttribute("data-val");
+
+          }
+          if (matrix[x][y+1] == 0 && tdToShow.getAttribute("data-alreadyDisplayed") != "yes") {
+            tdToShow.setAttribute("data-alreadyDisplayed", "yes");            
+            autoClickNoBombs(x,y+1);
+          }
+        }
+        if ((x+1) <= rows-1 && (y-1) >= 0 && matrix[x+1][y-1] != -1) {
+          let foundTds = document.querySelectorAll('td[data-coords="' + (x+1) + '.' + (y-1) + '"]');
+          let tdToShow;
+          //console.log(foundTds);
+          if (foundTds.length == 1) {
+            tdToShow = foundTds[0];
+            //console.log(tdToShow);
+            tdToShow.innerHTML= tdToShow.getAttribute("data-val");
+
+          }
+          if (matrix[x+1][y-1] == 0 && tdToShow.getAttribute("data-alreadyDisplayed") != "yes") {
+            tdToShow.setAttribute("data-alreadyDisplayed", "yes");            
+            autoClickNoBombs(x+1,y-1);
+          }
+        }
+        if ((x+1) <= rows-1 && matrix[x+1][y] != -1) {
+          let foundTds = document.querySelectorAll('td[data-coords="' + (x+1) + '.' + (y) + '"]');
+          let tdToShow;
+          //console.log(foundTds);
+          if (foundTds.length == 1) {
+            tdToShow = foundTds[0];
+            //console.log(tdToShow);
+            tdToShow.innerHTML= tdToShow.getAttribute("data-val");
+
+          }
+          if (matrix[x+1][y] == 0 && tdToShow.getAttribute("data-alreadyDisplayed") != "yes") {
+            tdToShow.setAttribute("data-alreadyDisplayed", "yes");            
+            autoClickNoBombs(x+1,y);
+          }
+        }
+        if ((x+1) <= rows-1 && (y+1) <= columns-1 && matrix[x+1][y+1] != -1) {
+          let foundTds = document.querySelectorAll('td[data-coords="' + (x+1) + '.' + (y+1) + '"]');
+          let tdToShow;
+          //console.log(foundTds);
+          if (foundTds.length == 1) {
+            tdToShow = foundTds[0];
+            //console.log(tdToShow);
+            tdToShow.innerHTML= tdToShow.getAttribute("data-val");
+
+          }
+          if (matrix[x+1][y+1] == 0 && tdToShow.getAttribute("data-alreadyDisplayed") != "yes") {
+            tdToShow.setAttribute("data-alreadyDisplayed", "yes");            
+            autoClickNoBombs(x+1,y+1);
+          }
+        }   
+        //return;     
+      }
+    </script>
+</body>
+</html>
